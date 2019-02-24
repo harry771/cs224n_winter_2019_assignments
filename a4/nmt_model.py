@@ -353,7 +353,7 @@ class NMT(nn.Module):
         alpha_t = torch.unsqueeze(alpha_t, 1)
         a_t = torch.bmm(alpha_t, enc_hiddens)
         a_t = torch.squeeze(a_t, 1)
-        U_t = torch.cat((a_t, torch.squeeze(dec_hidden, 0)), dim=1)
+        U_t = torch.cat((a_t, dec_hidden), dim=1)
         V_t = self.combined_output_projection(U_t)
         O_t = self.dropout(torch.tanh(V_t))
         ### END YOUR CODE
