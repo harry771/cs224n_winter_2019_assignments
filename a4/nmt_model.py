@@ -73,7 +73,7 @@ class NMT(nn.Module):
         ###     Dropout Layer:
         ###         https://pytorch.org/docs/stable/nn.html#torch.nn.Dropout
         self.encoder = torch.nn.LSTM(input_size=embed_size, hidden_size=hidden_size, bidirectional=True)
-        self.decoder = torch.nn.LSTM(input_size=embed_size, hidden_size=hidden_size)
+        self.decoder = torch.nn.LSTM(input_size=embed_size + hidden_size, hidden_size=hidden_size)
         self.h_projection = torch.nn.Linear(hidden_size * 2, hidden_size, bias=False)
         self.c_projection = torch.nn.Linear(hidden_size * 2, hidden_size, bias=False)
         self.att_projection = torch.nn.Linear(hidden_size * 2, hidden_size, bias=False)
@@ -309,8 +309,13 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/torch.html#torch.unsqueeze
         ###     Tensor Squeeze:
         ###         https://pytorch.org/docs/stable/torch.html#torch.squeeze
+        dec_state = (torch.unsqueeze(dec_state[0], 0), torch.unsqueeze(dec_state[1], 0))
+        _, dec_state = self.decoder(torch.unsqueeze(Ybar_t, 0), dec_state)
+        dec_hidden, dec_cell = dec_state
+        dec_hidden = torch.squeeze(dec_hidden, 0)
+        dec_cell = torch.squeeze(dec_cell, 0)
 
-
+        e_t = torch.squeeze(torch.bmm(enc_hiddens_proj, torch.unsqueeze(dec_hidden, 2)), 2)
         ### END YOUR CODE
 
         # Set e_t to -inf where enc_masks has 1
@@ -344,12 +349,17 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/torch.html#torch.cat
         ###     Tanh:
         ###         https://pytorch.org/docs/stable/torch.html#torch.tanh
-
-
+        alpha_t = F.softmax(e_t, 1)
+        alpha_t = torch.unsqueeze(alpha_t, 1)
+        a_t = torch.bmm(alpha_t, enc_hiddens)
+        a_t = torch.squeeze(a_t, 1)
+        U_t = torch.cat((a_t, torch.squeeze(dec_hidden, 0)), dim=1)
+        V_t = self.combined_output_projection(U_t)
+        O_t = self.dropout(torch.tanh(V_t))
         ### END YOUR CODE
 
         combined_output = O_t
-        return dec_state, combined_output, e_t
+        return (dec_hidden, dec_cell), combined_output, e_t
 
     def generate_sent_masks(self, enc_hiddens: torch.Tensor, source_lengths: List[int]) -> torch.Tensor:
         """ Generate sentence masks for encoder hidden states.
