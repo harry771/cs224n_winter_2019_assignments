@@ -40,19 +40,6 @@ def pad_sents_char(sents, char_pad_token):
     ###
     ###     You should NOT use the method `pad_sents()` below because of the way it handles 
     ###     padding and unknown words.
-    def sent_to_vec(sent):
-        # sent: list[list[int]] list of word, each word is a list of int
-        sent_padded = []
-        for word in sent[:max_sentence_length]:
-            word_padded = word[:max_word_length]
-            word_padded = word_padded + [char_pad_token] * (max_word_length - len(word_padded))
-            sent_padded.append(word_padded)
-        # pad sentence to have same number of word
-        sent_padded += [[char_pad_token] * max_word_length] * (max_sentence_length - len(sent_padded))
-        return sent_padded
-    sents_padded = [sent_to_vec(i) for i in sents]
-
-    return sents_padded
 
 
 def pad_sents(sents, pad_token):
