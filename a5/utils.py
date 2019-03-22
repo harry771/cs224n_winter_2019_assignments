@@ -40,7 +40,15 @@ def pad_sents_char(sents, char_pad_token):
     ###
     ###     You should NOT use the method `pad_sents()` below because of the way it handles 
     ###     padding and unknown words.
-
+    sents_padded = []
+    for sent in sents:
+        sent_padded = [[char_pad_token] * max_word_length] * max_sentence_length
+        for i, word in enumerate(sent):
+            word_padded = [char_pad_token] * max_word_length
+            word_padded[:len(word)] = word
+            sent_padded[i] = word_padded
+        sents_padded.append(sent_padded)
+    return sents_padded
 
 def pad_sents(sents, pad_token):
     """ Pad list of sentences according to the longest sentence in the batch.
