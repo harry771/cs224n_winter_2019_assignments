@@ -7,6 +7,7 @@ sanity_check.py: sanity checks for assignment 5
 Usage:
     sanity_check.py 1e
     sanity_check.py 1f
+    sanity_check.py 1h
     sanity_check.py 1j
     sanity_check.py 2a
     sanity_check.py 2b
@@ -30,10 +31,13 @@ from vocab import Vocab, VocabEntry
 from char_decoder import CharDecoder
 from nmt_model import NMT
 
+from highway import Highway
 
 import torch
 import torch.nn as nn
 import torch.nn.utils
+
+import torch.nn.functional as F
 
 #----------
 # CONSTANTS
@@ -95,6 +99,51 @@ def question_1f_sanity_check():
     print("Sanity Check Passed for Question 1f: Padding!")
     print("-"*80)
 
+def question_1h_sanity_check():
+    """ Sanity check for highway network.
+    """
+    print ("-"*80)
+    print("Running Sanity Check for Question 1h: Highway")
+    print ("-"*80)
+
+    # create highway network
+    highway = Highway(EMBED_SIZE)
+
+    # validate input & output shape
+    inpt = torch.zeros(BATCH_SIZE, EMBED_SIZE, dtype=torch.float)
+    output_expected_size = [BATCH_SIZE, EMBED_SIZE]
+    output = highway.forward(inpt)
+    assert(list(output.size()) == output_expected_size), "output shape is incorrect: it should be:\n {} but is:\n{}".format(output_expected_size, list(output.size()))
+
+    # manually set weights
+    highway.proj.weight.data = torch.Tensor([[0.3, 0.2, 0.8],
+                                             [0.1, 0.05, 0.4],
+                                             [-0.7, 0.01, -1.2]])
+    highway.proj.bias.data = torch.zeros(EMBED_SIZE)
+
+    highway.gate.weight.data = torch.Tensor([[0.3, 0.2, 0.8],
+                                             [0.1, 0.05, 0.4],
+                                             [-0.7, 0.01, -1.2]])
+    highway.gate.bias.data = torch.zeros(EMBED_SIZE)
+
+    inpt = torch.Tensor([[1, 2, 3], [0, 0, 0]])
+    proj = F.relu(highway.proj(inpt))
+    gate = torch.sigmoid(highway.gate(inpt))
+    output = highway(inpt)
+
+    expected_proj = torch.Tensor([[ 3.1000,  1.4000, 0.0],
+        [ 0.0,  0.0,  0.0]])
+    expected_gate = torch.Tensor([[ 0.95689274,  0.802183888, 0.013653659],
+        [ 0.5,  0.5,  0.5]])
+    expected_output = torch.Tensor([[3.00947475, 1.51868967, 2.95903902],
+       [0.0, 0.0, 0.0]])
+
+    assert(proj.allclose(expected_proj)), "proj is incorrect: it should be:\n {} but is:\n{}".format(expected_proj, proj)
+    assert(gate.allclose(expected_gate)), "gate is incorrect: it should be:\n {} but is:\n{}".format(expected_gate, gate)
+    assert(output.allclose(expected_output)), "output is incorrect: it should be:\n {} but is:\n{}".format(expected_output, output)
+
+    print("Sanity Check Passed for Question 1h: Highway!")
+    print("-"*80)
 
 def question_1j_sanity_check(model):
 	""" Sanity check for model_embeddings.py 
@@ -213,6 +262,8 @@ def main():
         question_1e_sanity_check()
     elif args['1f']:
         question_1f_sanity_check()
+    elif args['1h']:
+        question_1h_sanity_check()
     elif args['1j']:
         question_1j_sanity_check(model)
     elif args['2a']:
