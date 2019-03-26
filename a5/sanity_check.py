@@ -8,6 +8,7 @@ Usage:
     sanity_check.py 1e
     sanity_check.py 1f
     sanity_check.py 1h
+    sanity_check.py 1i
     sanity_check.py 1j
     sanity_check.py 2a
     sanity_check.py 2b
@@ -32,6 +33,7 @@ from char_decoder import CharDecoder
 from nmt_model import NMT
 
 from highway import Highway
+from cnn import CNN
 
 import torch
 import torch.nn as nn
@@ -143,6 +145,38 @@ def question_1h_sanity_check():
     assert(output.allclose(expected_output)), "output is incorrect: it should be:\n {} but is:\n{}".format(expected_output, output)
 
     print("Sanity Check Passed for Question 1h: Highway!")
+    print("-"*80)
+
+def question_1i_sanity_check():
+    """ Sanity check for cnn.
+    """
+    print ("-"*80)
+    print("Running Sanity Check for Question 1i: Cnn")
+    print ("-"*80)
+    
+    # TODO: write test cases
+    emb_size = 2
+    cnn = CNN(2, emb_size, kernel_size=2)
+    # out_channels, in_channels, kernel_size
+    cnn.cnn.weight.data = torch.Tensor([[[1, -1], [-1, 1]],
+                                       [[0.1, 0.2], [-0.3, 0.05]]])
+    cnn.cnn.bias.data = torch.zeros(emb_size)
+
+    # validate input & output shape
+    inpt = torch.Tensor([[[0.1, 0.2, 0, 0], [0, 1.3, 0, 0]]])
+    batch_size = inpt.size()[0]
+    output_expected_size = [batch_size, emb_size]
+    output = cnn(inpt)
+    assert(list(output.size()) == output_expected_size), "output shape is incorrect: it should be:\n {} but is:\n{}".format(output_expected_size, list(output.size()))
+    
+    after_relu = F.relu(cnn.cnn(inpt))
+    expected_after_relu = torch.Tensor([[1.2, 0, 0], [0.115, 0, 0]])
+    assert(after_relu.allclose(expected_after_relu)), "after_relu is incorrect: it should be:\n {} but is:\n{}".format(expected_after_relu, after_relu)
+
+    expected_output = torch.Tensor([[1.2, 0.115]])
+    assert(output.allclose(expected_output)), "output is incorrect: it should be:\n {} but is:\n{}".format(expected_output, output)
+
+    print("Sanity Check Passed for Question 1i: Cnn!")
     print("-"*80)
 
 def question_1j_sanity_check(model):
@@ -264,6 +298,8 @@ def main():
         question_1f_sanity_check()
     elif args['1h']:
         question_1h_sanity_check()
+    elif args['1i']:
+        question_1i_sanity_check()
     elif args['1j']:
         question_1j_sanity_check(model)
     elif args['2a']:
