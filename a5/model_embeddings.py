@@ -10,6 +10,8 @@ Anand Dhoot <anandd@stanford.edu>
 Michael Hahn <mhahn2@stanford.edu>
 """
 
+import torch
+import torch.nn.functional as F
 import torch.nn as nn
 
 # Do not change these imports; your module names should be
@@ -17,8 +19,8 @@ import torch.nn as nn
 #   `Highway` in the file `highway.py`
 # Uncomment the following two imports once you're ready to run part 1(j)
 
-# from cnn import CNN
-# from highway import Highway
+from cnn import CNN
+from highway import Highway
 
 # End "do not change" 
 
@@ -40,8 +42,11 @@ class ModelEmbeddings(nn.Module):
         ## End A4 code
 
         ### YOUR CODE HERE for part 1j
-
-
+        self.char_embeddings = nn.Embedding(len(vocab), 50)
+        self.vocab = vocab
+        self.cnn = CNN(embed_size, 50)
+        self.highway = Highway(embed_size)
+        self.embed_size = embed_size
         ### END YOUR CODE
 
     def forward(self, input):
@@ -59,7 +64,16 @@ class ModelEmbeddings(nn.Module):
         ## End A4 code
 
         ### YOUR CODE HERE for part 1j
-
-
+        # shape = (sentence_length, batch_size, max_word_length, embed_size)
+        # required = (batch_size, embed_size, max_seq_len)
+        embeddings = self.char_embeddings(input)
+        sentence_length, batch_size, max_word_length, embed_size = embeddings.size()
+        embeddings = torch.reshape(embeddings, (-1, max_word_length, embed_size))
+        embeddings = embeddings.permute(0, 2, 1)
+        cnn_output = self.cnn(embeddings)
+        highway_output = self.highway(cnn_output)
+        output = F.dropout(highway_output, p=0.3)
+        output = torch.reshape(output, (sentence_length, batch_size, -1))
+        return output
         ### END YOUR CODE
 
