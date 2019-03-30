@@ -7,6 +7,7 @@ CS224N 2018-19: Homework 5
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class CharDecoder(nn.Module):
     def __init__(self, hidden_size, char_embedding_size=50, target_vocab=None):
@@ -31,11 +32,12 @@ class CharDecoder(nn.Module):
         self.hidden_size = hidden_size
         self.char_embedding_size = char_embedding_size
         self.target_vocab = target_vocab
+        self.vocab_size = len(target_vocab.char2id)
 
         self.charDecoder = nn.LSTM(char_embedding_size, hidden_size)
-        self.char_output_projection = nn.Linear(hidden_size, len(target_vocab.char2id))
+        self.char_output_projection = nn.Linear(hidden_size, self.vocab_size)
         self.target_vocab = target_vocab
-        self.decoderCharEmb = nn.Embedding(len(target_vocab.char2id), char_embedding_size, padding_idx=target_vocab.char2id['<pad>'])
+        self.decoderCharEmb = nn.Embedding(self.vocab_size, char_embedding_size, padding_idx=target_vocab.char2id['<pad>'])
         ### END YOUR CODE
 
 
@@ -71,8 +73,12 @@ class CharDecoder(nn.Module):
         ###
         ### Hint: - Make sure padding characters do not contribute to the cross-entropy loss.
         ###       - char_sequence corresponds to the sequence x_1 ... x_{n+1} from the handout (e.g., <START>,m,u,s,i,c,<END>).
+        input_embedding = self.decoderCharEmb(char_sequence)
+        output, _ = self.charDecoder(input_embedding, dec_hidden)
+        scores = self.char_output_projection(output)
 
-
+        loss = F.cross_entropy(scores.view(-1, self.vocab_size), char_sequence.view(-1), reduction='sum')
+        return loss
         ### END YOUR CODE
 
     def decode_greedy(self, initialStates, device, max_length=21):
