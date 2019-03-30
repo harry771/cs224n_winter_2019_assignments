@@ -98,7 +98,25 @@ class CharDecoder(nn.Module):
         ###      - Use torch.tensor(..., device=device) to turn a list of character indices into a tensor.
         ###      - We use curly brackets as start-of-word and end-of-word characters. That is, use the character '{' for <START> and '}' for <END>.
         ###        Their indices are self.target_vocab.start_of_word and self.target_vocab.end_of_word, respectively.
-        
-        
+        batch_size = initialStates[0].size()[1]
+        decodedWords = [[] for _ in range(batch_size)]
+        decoded = set()
+        currentChars = torch.tensor([self.target_vocab.start_of_word]*batch_size, device=device)
+        currentChars = currentChars.view(1, batch_size)
+        states = initialStates
+        for _ in range(max_length - 1):
+            scores, states = self.forward(currentChars, states) # (1, batch, self.vocab_size)
+            currentChars = scores.argmax(dim=2)
+            for i, char_id in enumerate(currentChars.view(-1)):
+                if i in decoded:
+                    continue
+                char_id = char_id.item()
+                if char_id == self.target_vocab.end_of_word:
+                    decoded.add(i)
+                char = self.target_vocab.id2char[char_id]
+                decodedWords[i].append(char)
+            if decoded == batch_size:
+                break
+        return [''.join(chars) for chars in decodedWords]
         ### END YOUR CODE
 
