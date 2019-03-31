@@ -42,7 +42,7 @@ class ModelEmbeddings(nn.Module):
         ## End A4 code
 
         ### YOUR CODE HERE for part 1j
-        self.char_embeddings = nn.Embedding(len(vocab), 50)
+        self.char_embeddings = nn.Embedding(len(vocab.char2id), 50)
         self.vocab = vocab
         self.cnn = CNN(embed_size, 50)
         self.highway = Highway(embed_size)
