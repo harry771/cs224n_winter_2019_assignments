@@ -45,6 +45,8 @@ def pad_sents_char(sents, char_pad_token):
         sent_padded = [[char_pad_token] * max_word_length] * max_sentence_length
         for i, word in enumerate(sent):
             word_padded = [char_pad_token] * max_word_length
+            if len(word) > max_word_length:
+                word = word[:max_word_length]
             word_padded[:len(word)] = word
             sent_padded[i] = word_padded
         sents_padded.append(sent_padded)
