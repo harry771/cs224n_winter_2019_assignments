@@ -112,6 +112,7 @@ class CharDecoder(nn.Module):
                 char_id = char_id.item()
                 if char_id == self.target_vocab.end_of_word:
                     decoded.add(i)
+                    continue
                 char = self.target_vocab.id2char[char_id]
                 decodedWords[i].append(char)
             if decoded == batch_size:
